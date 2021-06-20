@@ -26,6 +26,9 @@ class Cell():
         self.val: CellVal = val
         self.board: Board = board
 
+    def __repr__(self):
+        return f"Cell(row {self.row}, col {self.col}, box {self.box}, val {self.val})\n"
+
     def getRow(self):
         return self.board.getRow(self.row)
 
@@ -50,14 +53,16 @@ class Group():
     want: set = set(range(1,10))
 
     def __init__(self,cells:set):
-        #print(len(cells))
-        #print({c.val for c in cells})
+        #print(cells)
         if len(cells) != 9:
             raise Exception
         self.cells = cells
         for c in self.cells:
             if type(c.val) is int:
                 self.possess(c.val)
+
+    def values(self):
+        return {c.val for c in self.cells}
 
     def possess(self,n:int):
         # this group now possesses n: shift the sets accordingly
@@ -70,24 +75,26 @@ class Group():
 
 class Board():
 
-    grid: list = []
-
-    # for future extension beyond 9x9
-    # this is the number of cells wide each box is,
-    # plus the number of boxes wide the board is
-    d: int = 3
-
-    # this is the number of cells in a row, col, or box
-    d2: int = d**2
-
-    # a tip: len(self.grid) == d**4
-
-    rows = []
-    cols = []
-    boxes = []
-
-
     def __init__(self,g:list):
+
+        self.grid: list = []
+
+        # for future extension beyond 9x9
+        # this is the number of cells wide each box is,
+        # plus the number of boxes wide the board is
+        self.d: int = 3
+
+        # this is the number of cells in a row, col, or box
+        # this line, formerly in the top class level instead
+        # of the constructor, was the cause of bug aleph
+        self.d2: int = self.d**2
+
+        # a tip: len(self.grid) == d**4
+
+        self.rows = []
+        self.cols = []
+        self.boxes = []
+
         # g will be a list of int
         for i, v in enumerate(g):
             # jesus this is a lot of powers
@@ -109,25 +116,29 @@ class Board():
 
 
     def slice(self,start:int,end:int,step:int = 1) -> set:
-        s = set(self.grid[start:end:step])
-        #print("Slice",str({c.val for c in s}))
-        return s
+        s = self.grid[start:end:step]
+        #print("Slice",str([c.val for c in s]))
+        se = set(s)
+        return se
 
     def makeRow(self,i: int) -> Group:
         start = i*self.d2
         end = (i+1)*self.d2
+        #print("row",i)
         g = Group(self.slice(start,end))
-        print("Size of row",i,len(g.cells))
         return g
 
     def makeCol(self,i: int) -> Group:
         start = i
         end = -self.d2+i+1 #hope that works, maybe off by one
-        if end == 0:
-            end = self.d**4
+        if end >= 0:
+            end = len(self.grid)
         step = self.d2 # grab every ncols'th cell
-        g = Group(self.slice(start,end,step))
-        print("Size of col",i,len(g.cells))
+        #print("col",i)
+        #print(start,end,step)
+        s = self.slice(start,end,step)
+        #print([e.val for e in s])
+        g = Group(s)
         return g
 
     def sliceUnion(self,ends:tuple) -> set:
@@ -163,8 +174,8 @@ class Board():
             (start+self.d2,start+self.d2+self.d),
             # same idea, shift by 2d^2
             (start+2*self.d2,start+2*self.d2+self.d))
+        #print("box",i)
         g = Group(self.sliceUnion(endpoints))
-        print("Size of box",i,len(g.cells))
         return g
 
     def getRow(self,i:int) -> Group:
