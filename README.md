@@ -10,7 +10,7 @@ It should, at some point, solve sudoku.
 
 ## Development goals
 
-**ALPHA**: Data structures, board display and read-in.
+**ALPHA - COMPLETE!**: Data structures, board display and read-in.
 
 **BETA**: Complete all algorithm subfunctions and create the primitive beta superstructure: evaluate every unfilled cell on the board, then run negative evaluation on each group until solved or stalled. Beta may not be able to completely solve some or all boards because it doesn't implement superpositions.
 
