@@ -14,6 +14,8 @@ import typing
 
 # alas, i'm not willing to install 3.9, so the set[int] will have to go
 
+# URGENT: AS IS, SETS WILL OCCUR AFTER EVALS. MAKE PRIORITY OPQUEUES IMMEDIATELY
+
 CellVal = typing.Union[int,set,None]
 
 class Ops(Enum):

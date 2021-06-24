@@ -18,18 +18,29 @@ It should, at some point, solve sudoku.
 
 **DELTA**: To be determined, but a system/heuristics for determining in what order to apply the operations.
 
+## Module Structure
+
+`classes.py` contains my data structures and their methods, and contains the algorithm's suboperations.
+
+`tests.py` contains a limited number of unit tests for the data structures.
+
+`game.py` is the only module that imports `pygame`, my current sole dependency, and contains code for drawing the board, rendering cells, and providing input and output. It provides the data structure `ViewCell`, which contains a `classes.Cell` and a method that renders it to the global surface.
+
+TBD: The Delta superstructure, which will determine how to apply operations in a less brute-force manner, will most likely be its own file. Currently, the algorithm superstructure is preset as 81 evaluations, one per cell.
+
 ## Types
 * `CellVal` is the union of `int` for a definite value, `set[int]` for possible values, or `None` for an unevaluated cell.
 
 ## Data Structures
 
+### Board
+The sudoku board, with lots of methods. Also has lists of rows, columns, and boxes, all indexed 0-8. It also has an in-development queue of operations, so I can eventually animate one operation per frame.
+
 ### Group
-A box, row, or column.
+A box, row, or column. Its primary use is to track which values the group has, and which values it still needs, which it contains in sets.
 
 ### Cell
-A cell on the board.
-
-`ValueSet`
+A cell on the board. Contains references to its groups (box, row, and column), as well as a host of methods.
 
 ## The Algorithm
 
