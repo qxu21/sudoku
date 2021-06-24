@@ -32,7 +32,7 @@ keymap = {
     plocals.K_9: 9,
 }
 
-width = 800
+width = 600
 height = 600
 margin = 50
 
@@ -147,7 +147,8 @@ def select(c):
     if selected_cell is not None:
         updated.append(selected_cell)
     selected_cell = c
-    updated.append(c)
+    if c is not None:
+        updated.append(c)
 
 def getViewCell(r,c):
     return viewcells[c+r*board.d2]
@@ -172,30 +173,42 @@ def moveSelect(xoff,yoff):
 while running:
     
     for event in pygame.event.get():
-        if event.type == plocals.QUIT:
+        # be wary of this order!
+        if event.type == plocals.QUIT or (event.type == plocals.KEYDOWN and event.key==plocals.K_q):
             running = False
-        elif event.type == plocals.MOUSEBUTTONDOWN:
-            for c in viewcells:
-                if c.cellrect.collidepoint(event.pos[0],event.pos[1]):
-                    select(c)
-                    break
-        elif selected_cell and event.type == plocals.KEYDOWN:
-            if event.key in keymap:
-                selected_cell.cell.val = keymap[event.key]
-            elif event.key in (plocals.K_UP,plocals.K_w):
-                moveSelect(-1,0)
-            elif event.key in (plocals.K_DOWN,plocals.K_s):
-                moveSelect(1,0)
-            elif event.key in (plocals.K_LEFT,plocals.K_a):
-                moveSelect(0,-1)
-            elif event.key in (plocals.K_RIGHT,plocals.K_d):
-                moveSelect(0,1)
-            updated.append(selected_cell)
+        elif phase == Phase.SETUP:
+            if (event.type == plocals.KEYDOWN
+            and event.key == plocals.K_RETURN):
+                selected_cell = None
+                phase = Phase.SOLVING
+                board.prepSolve()
+            elif event.type == plocals.MOUSEBUTTONDOWN:
+                for c in viewcells:
+                    if c.cellrect.collidepoint(event.pos[0],event.pos[1]):
+                        select(c)
+                        break
+            elif selected_cell and event.type == plocals.KEYDOWN:
+                if event.key in keymap:
+                    selected_cell.cell.val = keymap[event.key]
+                elif event.key in (plocals.K_UP,plocals.K_w):
+                    moveSelect(-1,0)
+                elif event.key in (plocals.K_DOWN,plocals.K_s):
+                    moveSelect(1,0)
+                elif event.key in (plocals.K_LEFT,plocals.K_a):
+                    moveSelect(0,-1)
+                elif event.key in (plocals.K_RIGHT,plocals.K_d):
+                    moveSelect(0,1)
+                updated.append(selected_cell)
+        
 
 
-                    
 
-    #updated = updated
+
+    # superstructure will be its own module after beta
+    if phase == phase.SOLVING:
+        board.evalOp()
+
+    updated = updated + [viewcells[i] for i in board.updated]
     board.updated = []
 
     for u in updated:

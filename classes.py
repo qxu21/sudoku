@@ -1,4 +1,4 @@
-#from enum import Enum
+from enum import Enum
 #
 #class LineType(Enum):
 #    ROW = 0
@@ -16,13 +16,25 @@ import typing
 
 CellVal = typing.Union[int,set,None]
 
+class Ops(Enum):
+    EVAL = 0
+    SET = 1
+    NEGEVAL = 2
+
+def invertVals(v):
+    s = set(range(1,10))
+    s.difference_update(v)
+    print(s)
+    return s
+
 class Cell():
 
     #had to remove the board type annotation because it isn't a valid name yet
-    def __init__(self,row:int,col:int,box:int,val:CellVal,board):
+    def __init__(self,i:int,row:int,col:int,box:int,val:CellVal,board):
         self.row: int = row
         self.col: int = col
         self.box: int = box
+        self.i: int = i
         self.val: CellVal = val
         self.board: Board = board
 
@@ -39,10 +51,54 @@ class Cell():
         return self.board.getBox(self.box)
 
     def getNeighbors(self):
-        return set.union(self.getRow(),self.getCol(),self.getBox())
+        return set.union(self.getRow().cells,self.getCol().cells,self.getBox().cells)
+
+    def getNeighborsWithout(self,i):
+        # realized this was useless after I wrote it
+        s = set()
+        for o in (self.getRow(),self.getCol(),self.getBox()):
+            if i not in o.have:
+                s.update(o)
+        return s
+
 
     def update(self):
-        self.board.updates.append(self)
+        self.board.updated.append(self.i)
+
+    def setop(self,ar:tuple):
+        self.update()
+        #print("A set op!")
+        self.val = ar[0]
+        for g in (self.getRow(),self.getCol(),self.getBox()):
+            g.possess(ar[0])
+        #for c in self.getNeighbors():
+        #    if isinstance(c.val,set) and i in c.val:
+        #        c.val.remove(i)
+        #        if len(c.val) == 1:
+        #            pass
+                    # recursion!
+                    #no recursion for testing!
+                    #v = c.val.pop()
+                    #c.set(v)
+
+    def eval(self):
+        """initial evaluation of a cell"""
+        if self.val:
+            return
+        eliminated = self.getRow().have | self.getCol().have | self.getBox().have
+        print(eliminated)
+        poss = invertVals(eliminated)
+        print(poss)
+        if len(poss) == 1:
+            v = poss.pop()
+            self.set(v)
+        else:
+            self.val = poss
+
+    def set(self,i:int):
+        print("loading in the setop")
+        self.board.opqueue.append((self.setop,(i,)))
+
 
 
 
@@ -61,9 +117,7 @@ class Group():
         if len(cells) != 9:
             raise Exception
         self.cells = cells
-        for c in self.cells:
-            if type(c.val) is int:
-                self.possess(c.val)
+        
 
     def values(self):
         return {c.val for c in self.cells}
@@ -76,11 +130,19 @@ class Group():
     def negEval(self):
         pass
 
+    def refresh(self):
+        for c in self.cells:
+            if type(c.val) is int:
+                print("Possessing a",str(c.val))
+                self.possess(c.val)
+
+
 
 class Board():
 
     # list[int] of cells to update
     updated = []
+    opqueue = []
 
     def __init__(self,g=81*[None]):
 
@@ -108,13 +170,16 @@ class Board():
             boxrow = i // self.d**3
             boxcol = (i % self.d2) // self.d
             boxn = boxrow*self.d + boxcol
-            self.grid.append(Cell(
+            cell = Cell(
+                i = i,
                 row = i // self.d2,
                 col = i % self.d2,
                 box = boxn,
                 val = v,
                 board = self
-                ))
+                )
+            self.grid.append(cell)
+            self.opqueue.append(cell.eval)
 
         for j in range(0,self.d2):
             self.rows.append(self.makeRow(j))
@@ -124,14 +189,12 @@ class Board():
 
     def slice(self,start:int,end:int,step:int = 1) -> set:
         s = self.grid[start:end:step]
-        #print("Slice",str([c.val for c in s]))
         se = set(s)
         return se
 
     def makeRow(self,i: int) -> Group:
         start = i*self.d2
         end = (i+1)*self.d2
-        #print("row",i)
         g = Group(self.slice(start,end))
         return g
 
@@ -141,10 +204,7 @@ class Board():
         if end >= 0:
             end = len(self.grid)
         step = self.d2 # grab every ncols'th cell
-        #print("col",i)
-        #print(start,end,step)
         s = self.slice(start,end,step)
-        #print([e.val for e in s])
         g = Group(s)
         return g
 
@@ -181,7 +241,6 @@ class Board():
             (start+self.d2,start+self.d2+self.d),
             # same idea, shift by 2d^2
             (start+2*self.d2,start+2*self.d2+self.d))
-        #print("box",i)
         g = Group(self.sliceUnion(endpoints))
         return g
 
@@ -196,6 +255,22 @@ class Board():
 
     def getCell(self,x,y):
         return self.grid[x+y*self.d2]
+
+    def evalOp(self):
+        if self.opqueue == []:
+            return
+        op = self.opqueue.pop(0)
+        if isinstance(op,tuple):
+            # packing is mysterious
+            op[0](op[1])
+        else:
+            op()
+
+    def prepSolve(self):
+        # current purpose is to set all the groups
+        for g in self.rows + self.cols + self.boxes:
+            g.refresh()
+
 
      
 #b = Board(list(range(0,81)))

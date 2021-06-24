@@ -25,3 +25,5 @@ class Board():
 Somehow `d` kept state because of the poor scoping decisions, and `d2` got bigger and bigger in different circumstances. I moved all this into `__init__` and suddenly the unit tests started working.
 
 When I first implemented moving the selected cell by keyboard, I got some hilariously weird results, such as moving diagonally. Turns out I had swapped the row and column arguments to `getViewCell`.
+
+When the solve algorithm first worked, and I plugged 1-8 in on the first row, the entire board filled with 9s.
