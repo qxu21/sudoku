@@ -22,4 +22,6 @@ class Board():
     # this is the number of cells in a row, col, or box
     d2: int = d**2
 ```
-Somehow `d` kept state because of the poor scoping decisions, and `d2` got bigger and bigger in different circumstances. I moved all this into `__init()__` and suddenly the unit tests started working.
+Somehow `d` kept state because of the poor scoping decisions, and `d2` got bigger and bigger in different circumstances. I moved all this into `__init__` and suddenly the unit tests started working.
+
+When I first implemented moving the selected cell by keyboard, I got some hilariously weird results, such as moving diagonally. Turns out I had swapped the row and column arguments to `getViewCell`.

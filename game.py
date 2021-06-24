@@ -1,9 +1,11 @@
 import classes
 import pygame
-from pygame.locals import *
+import pygame.locals as plocals
 from enum import Enum
 
-board = classes.Board(list(range(1,10))*9)
+#board = classes.Board(list(range(1,10))*9)
+board = classes.Board()
+selected_cell = None
 
 class Phase(Enum):
     SETUP = 0
@@ -12,6 +14,23 @@ class Phase(Enum):
 
 def round_down(num, divisor):
     return num - (num%divisor)
+
+keymap = {
+    # i know this is a sin,
+    # but i see no way forward but a hardcode
+    plocals.K_0: None,
+    plocals.K_BACKSPACE: None,
+    plocals.K_DELETE: None,
+    plocals.K_1: 1,
+    plocals.K_2: 2,
+    plocals.K_3: 3,
+    plocals.K_4: 4,
+    plocals.K_5: 5,
+    plocals.K_6: 6,
+    plocals.K_7: 7,
+    plocals.K_8: 8,
+    plocals.K_9: 9,
+}
 
 width = 800
 height = 600
@@ -32,8 +51,6 @@ cellsize = boxsize / 3 - boxwidth / 3
 # 2: complete
 phase = Phase.SETUP
 
-selected_cell = (5,5)
-
 pygame.init()
 surf = pygame.display.set_mode(size=(width,height))
 
@@ -44,13 +61,20 @@ bg = (0,0,0)
 viewcells = []
 
 class ViewCell():
-    bgcolor = None
+    bgcolor = (0,0,0)
 
-    def __init__(self,innerrect,cell):
-        self.rect = innerrect
+    def __init__(self,row,col,cellrect,rect,cell):
+        self.row = row
+        self.col = col
+        self.rect = rect
         self.cell = cell
+        self.cellrect = cellrect
 
     def render(self):
+        if self is selected_cell and phase == Phase.SETUP:
+            self.bgcolor = (180,120,0)
+        else:
+            self.bgcolor = (0,0,0)
         if self.bgcolor is not None:
             pygame.draw.rect(
                 surf, self.bgcolor,
@@ -61,14 +85,6 @@ class ViewCell():
             rect.center = self.rect.center
             surf.blit(n, rect)
 
-
-
-
-def findBg(x,y):
-    if phase == Phase.SETUP and (x,y) == selected_cell:
-        return (180,120,0)
-    else:
-        return None
 def drawBoard():
     for i in range(0,3):
         for j in range(0,3):
@@ -106,33 +122,85 @@ def drawBoard():
                 width=cellwidth)
 
             cell = ViewCell(
-                innerrect = pygame.Rect(
+                row = i,
+                col = j,
+                cellrect = cellrect,
+                rect = pygame.Rect(
                 left+cellwidth/2,
                 top+cellwidth/2,
                 cellsize-cellwidth-1,
                 cellsize-cellwidth-1),
                 cell=board.getCell(i,j))
 
-            bgcolor = findBg(i,j)
-            if bgcolor is not None:
-                cell.bgcolor = bgcolor
-
             cell.render()
-
             viewcells.append(cell)
-                
 
-            
-
-
-#surf.blit()
 
 drawBoard()
+#selected_cell = viewcells[0]
 
-while 1:
+running = True
+updated = []
+
+def select(c):
+    global selected_cell
+    if selected_cell is not None:
+        updated.append(selected_cell)
+    selected_cell = c
+    updated.append(c)
+
+def getViewCell(r,c):
+    return viewcells[c+r*board.d2]
+
+def offsetWrap(v,off,bound=board.d2):
+    assert off in (-1,0,1)
+    if v == 0 and off == -1:
+        v = bound-1
+    elif v == bound-1 and off == 1:
+        v = 0
+    else:
+        v += off
+    return v
+
+def moveSelect(xoff,yoff):
+    # xoff and yoff in [-1,1]
+    assert xoff in (-1,0,1) and yoff in (-1,0,1)
+    r = offsetWrap(selected_cell.row,yoff)
+    c = offsetWrap(selected_cell.col,xoff)
+    select(getViewCell(r,c))
+
+while running:
+    
     for event in pygame.event.get():
-        if event.type == QUIT:
-            break
+        if event.type == plocals.QUIT:
+            running = False
+        elif event.type == plocals.MOUSEBUTTONDOWN:
+            for c in viewcells:
+                if c.cellrect.collidepoint(event.pos[0],event.pos[1]):
+                    select(c)
+                    break
+        elif selected_cell and event.type == plocals.KEYDOWN:
+            if event.key in keymap:
+                selected_cell.cell.val = keymap[event.key]
+            elif event.key in (plocals.K_UP,plocals.K_w):
+                moveSelect(-1,0)
+            elif event.key in (plocals.K_DOWN,plocals.K_s):
+                moveSelect(1,0)
+            elif event.key in (plocals.K_LEFT,plocals.K_a):
+                moveSelect(0,-1)
+            elif event.key in (plocals.K_RIGHT,plocals.K_d):
+                moveSelect(0,1)
+            updated.append(selected_cell)
+
+
+                    
+
+    #updated = updated
+    board.updated = []
+
+    for u in updated:
+        u.render()
+
 
     pygame.display.flip()
 

@@ -41,6 +41,10 @@ class Cell():
     def getNeighbors(self):
         return set.union(self.getRow(),self.getCol(),self.getBox())
 
+    def update(self):
+        self.board.updates.append(self)
+
+
 
 class Group():
 
@@ -74,6 +78,9 @@ class Group():
 
 
 class Board():
+
+    # list[int] of cells to update
+    updated = []
 
     def __init__(self,g=81*[None]):
 
