@@ -10,7 +10,7 @@ import typing
 # Number
 # Superposition (later)
 # Possibilities
-# 'None
+# None
 
 # alas, i'm not willing to install 3.9, so the set[int] will have to go
 
@@ -75,7 +75,7 @@ class Group():
 
 class Board():
 
-    def __init__(self,g:list):
+    def __init__(self,g=81*[None]):
 
         self.grid: list = []
 
@@ -186,6 +186,9 @@ class Board():
 
     def getBox(self,i:int) -> Group:
         return self.boxes[i]
+
+    def getCell(self,x,y):
+        return self.grid[x+y*self.d2]
 
      
 #b = Board(list(range(0,81)))

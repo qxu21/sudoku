@@ -8,6 +8,8 @@ class GroupTestCase(unittest.TestCase):
 
 class BoardTestcase(unittest.TestCase):
     def setUp(self):
+        # yes, this is hilariously not a sudoku board,
+        # but it's good for testing
         self.b = classes.Board(list(range(0,81)))
 
     def tearDown(self):
