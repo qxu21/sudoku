@@ -179,6 +179,7 @@ while running:
         elif phase == Phase.SETUP:
             if (event.type == plocals.KEYDOWN
             and event.key == plocals.K_RETURN):
+                updated.append(selected_cell)
                 selected_cell = None
                 phase = Phase.SOLVING
                 board.prepSolve()
@@ -208,11 +209,19 @@ while running:
     if phase == phase.SOLVING:
         board.evalOp()
 
+    #if board.updated:
+    #    print("board ids to update:",board.updated)
+    #    for x in board.updated:
+    #        print(board.grid[x].val)
+    #        print(viewcells[x].cell.val)
+    #        print("end board update info")
+
     updated = updated + [viewcells[i] for i in board.updated]
     board.updated = []
 
     for u in updated:
         u.render()
+    updated = []
 
 
     pygame.display.flip()

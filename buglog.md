@@ -28,4 +28,33 @@ When I first implemented moving the selected cell by keyboard, I got some hilari
 
 # Bug Bet
 
-When the solve algorithm first worked, and I plugged 1-8 in on the first row, the entire board filled with 9s.
+When the solve algorithm first worked, and I plugged 1-8 in on the first row, the entire board filled with 9s. Look at the difference between the buggy chunk
+
+```python
+class Group():
+
+    cells: set = set()
+    have: set = set()
+    want: set = set(range(1,10))
+
+    def __init__(self,cells:set):
+        if len(cells) != 9:
+            raise Exception
+        self.cells = cells
+```
+and the edit that fixed it
+```python
+class Group():
+    
+    def __init__(self,cells:set):
+        self.cells: set = set()
+        self.have: set = set()
+        self.want: set = set(range(1,10))
+        if len(cells) != 9:
+            raise Exception
+        self.cells = cells
+```
+
+Turns out the first one has universally shared class attributes, so when I updated the `have` and `want` sets on any one `Group`, the change was visible to all `Group`s! Lesson learned: only use per-instance attributes in the init function.
+
+That stopped the entire grid from filling up with numbers, but the correct cell wasn't filling. Turns out I made the same error of swapping my row and column in my `Board.getCell()` function, which caused the wrong cell to be associated to each `ViewCell`. Write your tests, kids.

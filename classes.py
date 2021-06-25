@@ -26,7 +26,6 @@ class Ops(Enum):
 def invertVals(v):
     s = set(range(1,10))
     s.difference_update(v)
-    print(s)
     return s
 
 class Cell():
@@ -67,41 +66,30 @@ class Cell():
     def update(self):
         self.board.updated.append(self.i)
 
-    def setop(self,ar:tuple):
+    def set(self,v:int):
         self.update()
-        #print("A set op!")
-        self.val = ar[0]
+        self.val = v
         for g in (self.getRow(),self.getCol(),self.getBox()):
-            g.possess(ar[0])
-        #for c in self.getNeighbors():
-        #    if isinstance(c.val,set) and i in c.val:
-        #        c.val.remove(i)
-        #        if len(c.val) == 1:
-        #            pass
+            g.possess(v)
+        for c in self.getNeighbors():
+            if isinstance(c.val,set) and v in c.val:
+                c.val.remove(v)
+                if len(c.val) == 1:
                     # recursion!
-                    #no recursion for testing!
-                    #v = c.val.pop()
-                    #c.set(v)
+                    nv = c.val.pop()
+                    self.board.queue(c.set,nv,priority=True)
 
     def eval(self):
         """initial evaluation of a cell"""
         if self.val:
             return
         eliminated = self.getRow().have | self.getCol().have | self.getBox().have
-        print(eliminated)
         poss = invertVals(eliminated)
-        print(poss)
         if len(poss) == 1:
             v = poss.pop()
-            self.set(v)
+            self.board.queue(self.set,v,priority=True)
         else:
             self.val = poss
-
-    def set(self,i:int):
-        print("loading in the setop")
-        self.board.opqueue.append((self.setop,(i,)))
-
-
 
 
 class Group():
@@ -110,12 +98,11 @@ class Group():
     # instead of lists of cells. we shouldn't ever need to pinpoint
     # a cell within a group by its list coordinate, especially since
     # this type is used for boxes and lines.
-    cells: set = set()
-    have: set = set()
-    want: set = set(range(1,10))
+    
 
     def __init__(self,cells:set):
-        #print(cells)
+        self.have: set = set()
+        self.want: set = set(range(1,10))
         if len(cells) != 9:
             raise Exception
         self.cells = cells
@@ -135,16 +122,11 @@ class Group():
     def refresh(self):
         for c in self.cells:
             if type(c.val) is int:
-                print("Possessing a",str(c.val))
                 self.possess(c.val)
 
 
 
 class Board():
-
-    # list[int] of cells to update
-    updated = []
-    opqueue = []
 
     def __init__(self,g=81*[None]):
 
@@ -166,6 +148,11 @@ class Board():
         self.cols = []
         self.boxes = []
 
+        # list[int] of cells to update
+        self.updated = []
+        self.opqueue = []
+        self.pqueue = []
+
         # g will be a list of int
         for i, v in enumerate(g):
             # jesus this is a lot of powers
@@ -181,12 +168,19 @@ class Board():
                 board = self
                 )
             self.grid.append(cell)
-            self.opqueue.append(cell.eval)
+            self.queue(cell.eval)
 
         for j in range(0,self.d2):
             self.rows.append(self.makeRow(j))
             self.cols.append(self.makeCol(j))
             self.boxes.append(self.makeBox(j))
+
+    def queue(self,func,arg=None,priority=False):
+        if priority:
+            self.pqueue.append((func,arg))
+        else:
+            self.opqueue.append((func,arg))
+
 
 
     def slice(self,start:int,end:int,step:int = 1) -> set:
@@ -255,18 +249,21 @@ class Board():
     def getBox(self,i:int) -> Group:
         return self.boxes[i]
 
-    def getCell(self,x,y):
-        return self.grid[x+y*self.d2]
+    def getCell(self,r,c):
+        return self.grid[c+r*self.d2]
 
     def evalOp(self):
-        if self.opqueue == []:
+        if self.pqueue != []:
+            op = self.pqueue.pop(0)
+        elif self.opqueue == []:
             return
-        op = self.opqueue.pop(0)
-        if isinstance(op,tuple):
+        else:
+            op = self.opqueue.pop(0)
+        if op[1] is not None:
             # packing is mysterious
             op[0](op[1])
         else:
-            op()
+            op[0]()
 
     def prepSolve(self):
         # current purpose is to set all the groups
